@@ -84,14 +84,11 @@ The pretrained VGG16 model was initialized with ImageNet weights using `include_
 
 The output from the convolutional feature extractor was then passed through a custom classification head consisting of:
 
-* A Flatten layer to convert convolutional feature maps into a one-dimensional feature vector
-* A Dropout layer with a dropout rate of 0.5 for regularization
-* A Dense layer with 1024 neurons and ReLU activation
-* A second Dropout layer with a dropout rate of 0.5
-* A Dense layer with 512 neurons and ReLU activation
-* A third Dropout layer with a dropout rate of 0.5
-* A Dense layer with 256 neurons and ReLU activation
+* A Global Average Pooling layer to convert convolutional feature maps into a compact feature vector
+* A Dense layer with 256 neurons and ReLU activation for feature learning
+* A Dropout layer with a dropout rate of 0.2 for regularization and improved generalization
 * A final Dense output layer with 1 neuron and Sigmoid activation for binary classification
+
 
 The model was compiled using:
 
@@ -162,14 +159,11 @@ The pretrained VGG16 convolutional layers up to the `block5_pool` layer were use
 
 The original classification layers were replaced with a custom fully connected classification head consisting of:
 
-* Flatten layer
-* Dropout layer (p = 0.5)
-* Fully connected layer (1024 neurons)
-* Dropout layer (p = 0.5)
-* Fully connected layer (512 neurons)
-* Dropout layer (p = 0.5)
-* Fully connected layer (256 neurons)
-* Final fully connected output layer (1 neuron, Sigmoid activation)
+* A Global Average Pooling layer to convert convolutional feature maps into a compact feature vector
+* A Dense layer with 256 neurons and ReLU activation for feature learning
+* A Dropout layer with a dropout rate of 0.2 for regularization and improved generalization
+* A final Dense output layer with 1 neuron and Sigmoid activation for binary classification
+
 
 This architecture supports task-specific optimization for binary pneumonia classification while leveraging pretrained feature representations from ImageNet.
 
@@ -240,21 +234,15 @@ The threshold optimization results are shown below:
 
 ![Precision/Recall/F1 vs Thresholds](./pr_f1_thresholds.png "Precision/Recall/F1 vs Thresholds")
 
-Based on the Precision, Recall, and F1-score versus threshold analysis, a decision threshold of **0.35** is selected for this model deployment.
+---
 
-This threshold was selected because it provides the most appropriate clinical balance between sensitivity (recall) and precision for pneumonia screening.
+Threshold optimization was performed using precision-recall analysis to identify the most clinically appropriate operating point for pneumonia detection. The selected operating threshold was **0.31**, chosen to prioritize sensitivity while maintaining acceptable overall performance under class imbalance conditions.
 
-At approximately **0.35**:
+At this threshold, the model achieved a **recall (sensitivity) of 81.3%**, **precision of 21.3%**, and an **F1-score of 0.338**, with an overall **ROC AUC of 0.67** and **Average Precision (AP) score of 0.39** on the validation set. The corresponding confusion matrix showed **13 true positives, 3 false negatives, 48 false positives, and 36 true negatives**.
 
-* **Recall** remains relatively high (approximately 0.75–0.80), which helps minimize False Negatives and reduces the risk of missed pneumonia cases
-* **Precision** is moderate (approximately 0.24–0.26), which is acceptable for a screening-support tool where follow-up review by a radiologist is expected
-* **F1-score** is near its peak, indicating a balanced tradeoff between precision and recall under class imbalance conditions
+Higher thresholds (>0.5) improved precision slightly but caused a substantial reduction in recall, increasing the risk of missed pneumonia cases (false negatives), which is clinically undesirable in a screening setting. Lower thresholds (<0.2) increased recall further but produced excessive false positives, reducing workflow efficiency and increasing unnecessary radiologist review.
 
-Higher thresholds (>0.8) increase precision slightly but cause a substantial drop in recall, which is undesirable in pneumonia screening because missed positive cases may delay diagnosis and treatment.
-
-Lower thresholds (<0.2) increase recall further but produce excessive False Positives, which may lead to unnecessary clinical review and reduced workflow efficiency.
-
-Because the intended use of this algorithm is to assist radiologists in identifying suspicious pneumonia findings rather than to provide a definitive diagnosis, prioritizing recall is clinically appropriate. Therefore, a threshold of **0.35** provides the most suitable operating point for safe and effective deployment.
+Because the intended use of this algorithm is to assist radiologists in identifying suspicious pneumonia findings rather than to provide definitive diagnosis, prioritizing recall is clinically appropriate. Missing a pneumonia case carries greater clinical risk than generating additional false positives that can be reviewed by a radiologist. Therefore, a threshold of **0.31** provides the most suitable balance between sensitivity and precision for safe and effective deployment.
 
 ---
 
